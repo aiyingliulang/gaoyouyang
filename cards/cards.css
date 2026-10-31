@@ -1,0 +1,364 @@
+/* ============================================================
+   稿有样 Draftory · 小红书图文卡片 样式表
+   1) 页面 UI（与主程序同一套青绿体系）
+   2) 卡片本体（1080×1440 真实尺寸，预览用 transform 缩放，
+      导出时把卡片克隆到 .export-stage 按 1:1 渲染）
+   3) 免费版水印 .card-watermark 与 2x 未解锁说明对话框 .modal
+   注意：卡片视觉全部依赖真实元素与 CSS 背景色/边框，
+         不使用 ::before / ::after 与 box-shadow，
+         以保证 html2canvas 导出与预览一致。
+   ============================================================ */
+
+:root{
+  --ink:#23383a;
+  --muted:#82918d;
+  --teal:#236a61;
+  --line:#e0e9e5;
+  --bg:#edf4f1;
+  --paper:#f8f3ea;
+  --card-ink:#2b3a34;
+  --card-terra:#b9754e;
+  --card-gold:#a4906e;
+  --card-teal:#2f6d60;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- 顶栏 ---------- */
+.top{
+  height:72px;background:#fff;border-bottom:1px solid #e4ede8;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;position:sticky;top:0;z-index:20;
+}
+.top-left{display:flex;align-items:center;gap:16px;min-width:0}
+.back{
+  color:#4d6b64;text-decoration:none;font-size:13px;font-weight:700;
+  padding:6px 12px;border:1px solid #dbe8e2;border-radius:999px;white-space:nowrap;
+}
+.back:hover{background:#f3f9f6;border-color:#bcd8cd;color:var(--teal)}
+.divider{width:1px;height:22px;background:#e4ede8}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{
+  display:grid;place-items:center;width:34px;height:34px;border-radius:10px 3px 10px 3px;
+  background:var(--teal);color:#fff;font-family:Georgia,"Songti SC",serif;font-size:19px;
+}
+.brand strong{font-size:15px;letter-spacing:1px;margin-right:8px}
+.brand small{font-size:10px;letter-spacing:1.2px;color:#93a49e}
+.badge{
+  font-size:11px;color:#6d8a83;background:#f4faf7;border:1px solid #dcebe4;
+  border-radius:999px;padding:6px 12px;letter-spacing:.3px;
+}
+
+/* ---------- 布局 ---------- */
+.layout{
+  max-width:1560px;margin:0 auto;padding:26px 28px 60px;
+  display:grid;grid-template-columns:396px minmax(0,1fr);gap:26px;align-items:start;
+}
+
+/* ---------- 左栏 ---------- */
+.panel{
+  background:#fff;border:1px solid #dbe8e2;border-radius:14px;
+  padding:22px 22px 18px;box-shadow:0 14px 40px #406b5910;
+  position:sticky;top:98px;
+}
+.panel h1{
+  font-family:Georgia,"Songti SC",serif;font-size:22px;letter-spacing:1px;
+  margin:0 0 8px;color:#1f3630;
+}
+.lead{font-size:12px;line-height:1.75;color:#7d8e88;margin:0 0 18px}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.field.grow{flex:1;min-height:0}
+.field label{
+  font-size:12px;font-weight:700;color:#3c534c;
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+}
+.field label em{font-style:normal;font-weight:400;font-size:11px;color:#a3b2ad}
+.field input,.field textarea{
+  width:100%;border:1px solid #dbe8e2;background:#f9fcfb;border-radius:8px;
+  padding:10px 12px;font-size:13px;color:#2c443d;font-family:inherit;outline:none;
+  transition:border-color .15s,background .15s;
+}
+.field input:focus,.field textarea:focus{border-color:#8fc3b4;background:#fff;box-shadow:0 0 0 3px #e7f3ee}
+.field textarea{
+  height:290px;resize:vertical;line-height:1.85;font-size:13px;
+}
+.field textarea::placeholder,.field input::placeholder{color:#b3c1bd}
+
+.meter{
+  display:flex;gap:8px;margin:4px 0 14px;
+}
+.meter span{
+  flex:1;text-align:center;font-size:11px;color:#83948e;background:#f5faf8;
+  border:1px solid #e6f0ec;border-radius:8px;padding:8px 4px;
+}
+.meter b{display:block;font-size:16px;color:var(--teal);font-family:Georgia,serif;margin-bottom:2px}
+
+.btn-row{display:flex;gap:10px}
+.btn-row.sub-row{margin-top:8px}
+.btn{
+  flex:1;border-radius:9px;padding:11px 10px;font-size:13px;font-weight:700;cursor:pointer;
+  font-family:inherit;border:1px solid transparent;transition:all .15s;white-space:nowrap;
+}
+.btn.primary{background:var(--teal);color:#fff;box-shadow:0 8px 18px #236a6124}
+.btn.primary:hover{background:#1d5b53}
+.btn.ghost{background:#fff;border-color:#cfe2da;color:#3d5f57}
+.btn.ghost:hover{background:#f4faf7;border-color:#a9cdc0}
+.btn.link{background:transparent;border:none;color:#7f938d;font-weight:400;font-size:12px;padding:6px}
+.btn.link:hover{color:var(--teal);text-decoration:underline}
+.btn:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+.btn.busy{position:relative;color:transparent}
+.btn.busy::after{
+  content:"";position:absolute;inset:0;margin:auto;width:14px;height:14px;border-radius:50%;
+  border:2px solid #ffffff80;border-top-color:#fff;animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 整行按钮（全部 2x 高清导出） */
+.btn-row .btn.wide{flex:1}
+.btn-row + .btn-row{margin-top:8px}
+/* 免费状态下的 2x 按钮：锁的视觉提示（仍可点击，点击后弹出说明） */
+.btn.is-locked::before{content:"🔒 "}
+
+/* Pro / 免费状态小字 */
+.pro-state{
+  display:flex;align-items:center;gap:7px;
+  font-size:11px;color:#7f938d;margin:12px 0 0;letter-spacing:.3px;
+}
+.pro-state .pro-dot{
+  width:6px;height:6px;border-radius:50%;background:#c9a227;flex:0 0 auto;
+}
+.pro-state.is-pro{color:#2f6d60}
+.pro-state.is-pro .pro-dot{background:#2f6d60}
+.pro-state-link{
+  margin-left:auto;color:#5d7c73;text-decoration:none;font-size:11px;font-weight:700;
+  border-bottom:1px dotted #b9cec6;padding-bottom:1px;
+}
+.pro-state-link:hover{color:var(--teal);border-bottom-color:var(--teal)}
+.pro-state-link[hidden]{display:none}
+
+.status{
+  font-size:11px;line-height:1.6;color:#93a49e;margin:12px 0 0;
+  border-top:1px dashed #e2ece8;padding-top:10px;min-height:32px;
+}
+
+/* ---------- 右栏 ---------- */
+.stage{min-width:0}
+.stage-head{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin:2px 2px 16px;
+}
+.stage-head h2{
+  font-size:14px;letter-spacing:2px;margin:0;color:#2b463f;font-weight:700;
+}
+.stage-hint{font-size:11px;color:#93a49e}
+
+.grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:24px;
+}
+.slot{min-width:0}
+.card-holder{
+  position:relative;width:100%;overflow:hidden;border-radius:10px;
+  background:var(--paper);border:1px solid #e2d8c5;
+  box-shadow:0 10px 26px #4a3f2e14;
+}
+.card-tools{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:8px 2px 0;
+}
+.card-tools .tag{
+  font-size:11px;color:#8d9a94;letter-spacing:.4px;
+}
+.card-tools .tag b{color:#4c6b62;font-weight:700}
+.card-tools .btns{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.card-tools button{
+  font-size:11.5px;font-family:inherit;font-weight:700;cursor:pointer;
+  color:var(--teal);background:#fff;border:1px solid #cfe2da;border-radius:7px;
+  padding:6px 12px;transition:all .15s;
+}
+.card-tools button:hover{background:var(--teal);color:#fff;border-color:var(--teal)}
+.card-tools button:disabled{opacity:.5;cursor:progress}
+/* 2x 按钮：略微弱化的次要样式，免费状态加锁标 */
+.card-tools button.btn-2x{color:#7a6a4f;border-color:#e2d8c5;background:#fffdf8}
+.card-tools button.btn-2x:hover{background:#b9754e;border-color:#b9754e;color:#fff}
+.card-tools button.is-locked::before{content:"🔒 "}
+
+.empty{
+  border:1px dashed #cfe0d8;border-radius:14px;background:#f7fbf9;
+  padding:64px 24px;text-align:center;color:#94a7a0;font-size:13px;line-height:2;
+}
+.empty-mark{
+  display:block;font-size:30px;color:#c9dcd4;margin-bottom:14px;
+  font-family:Georgia,serif;
+}
+
+/* ============================================================
+   卡片本体（真实尺寸 1080×1440）
+   ============================================================ */
+.card{
+  position:relative;width:1080px;height:1440px;
+  background:var(--paper);color:var(--card-ink);overflow:hidden;
+  transform-origin:top left;
+  font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+}
+/* 纸张渐变（若不支持则回落到 .card 的纯色底） */
+.card-paper{
+  position:absolute;left:0;top:0;width:1080px;height:1440px;
+  background-color:#f8f3ea;
+  background-image:linear-gradient(158deg,#fbf7ef 0%,#f6f0e4 46%,#efe6d5 100%);
+}
+/* 细边框（内缩 46px） */
+.card-frame{
+  position:absolute;left:46px;top:46px;width:988px;height:1348px;
+  border:1px solid rgba(170,148,112,.42);
+}
+/* 左上角的印刷角标 */
+.card-corner{
+  position:absolute;left:34px;top:34px;width:24px;height:24px;
+  background:var(--card-terra);
+}
+.card-corner-2{
+  position:absolute;left:58px;top:58px;width:12px;height:12px;
+  border-right:1px solid rgba(170,148,112,.55);
+  border-bottom:1px solid rgba(170,148,112,.55);
+}
+
+/* 内容容器 */
+.card-inner{
+  position:absolute;left:0;top:0;width:1080px;height:1440px;
+  padding:112px 116px 0;
+  display:flex;flex-direction:column;
+}
+.card-head{display:flex;align-items:center;gap:14px;margin-bottom:0}
+.card-head .kicker{
+  font-size:20px;letter-spacing:7px;color:#9d907c;font-family:Georgia,serif;
+}
+.card-head .dot{width:9px;height:9px;background:var(--card-terra);border-radius:0}
+.card-head .rule{flex:1;height:1px;background:rgba(170,148,112,.45);margin-left:6px}
+
+.card-foot{
+  position:absolute;left:116px;bottom:96px;width:848px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-top:1px solid rgba(170,148,112,.38);padding-top:20px;
+}
+.foot-brand{font-size:22px;letter-spacing:5px;color:#96896f;font-family:"Songti SC",serif}
+.foot-page{font-size:22px;letter-spacing:2px;color:#96896f;font-family:Georgia,serif}
+
+/* 免费版水印：卡片 DOM 的一部分（右下角，页脚细线下方、内框之内）
+   小字号 + 低透明度；由 cards.js 在渲染时插入，html2canvas 会把它
+   和其它元素一样绘制进 PNG 像素，Pro 状态则不插入该元素。 */
+.card-watermark{
+  position:absolute;right:116px;bottom:54px;
+  font-family:Georgia,"Songti SC","Source Han Serif SC",serif;
+  font-size:20px;letter-spacing:3px;line-height:1;
+  color:rgba(43,58,52,.30);
+  pointer-events:none;user-select:none;
+}
+
+/* ---------- 封面卡 ---------- */
+.is-cover .card-inner{padding-top:150px}
+.cover-orn{
+  position:absolute;right:-120px;top:-120px;width:420px;height:420px;
+  border:1px solid rgba(185,117,78,.35);border-radius:50%;
+}
+.cover-orn-2{
+  position:absolute;right:20px;top:190px;width:150px;height:150px;
+  border:1px solid rgba(35,106,97,.22);border-radius:50%;
+}
+.cover-orn-3{
+  position:absolute;right:92px;top:262px;width:8px;height:8px;border-radius:50%;
+  background:var(--card-terra);
+}
+.cover-body{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:284px}
+.cover-eyebrow{
+  font-size:22px;letter-spacing:8px;color:var(--card-terra);margin:0 0 40px;
+  font-family:Georgia,"Songti SC",serif;
+}
+.cover-title{
+  font-family:"Songti SC",Georgia,"Source Han Serif SC",serif;
+  font-size:80px;line-height:1.36;letter-spacing:2px;color:#22332d;
+  margin:0;font-weight:600;max-width:860px;word-break:break-word;
+}
+.cover-rule{display:block;width:96px;height:4px;background:var(--card-teal,#2f6d60);margin:44px 0 36px;opacity:.85}
+.cover-sub{
+  font-size:34px;line-height:1.9;color:#5f6f66;margin:0;max-width:800px;letter-spacing:.5px;
+}
+
+/* ---------- 内容卡 ---------- */
+.body-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;padding:34px 0 168px}
+.paras{margin:0;font-size:34px;line-height:1.92}
+.para{
+  font-size:inherit;line-height:inherit;color:#31423a;margin:0 0 26px;
+  letter-spacing:.5px;
+}
+.para:last-child{margin-bottom:0}
+
+/* 导出舞台：离屏 1:1 渲染 */
+.export-stage{
+  position:absolute;left:-20000px;top:0;width:1080px;height:1440px;
+  pointer-events:none;
+}
+.export-stage .card{transform:none!important}
+
+/* ---------- 2x 未解锁说明对话框（页面内实现） ---------- */
+body.modal-open{overflow:hidden}
+.modal{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:24px}
+.modal[hidden]{display:none}
+.modal-mask{position:absolute;inset:0;background:#14231f66;backdrop-filter:blur(2px)}
+.modal-card{
+  position:relative;width:min(430px,100%);background:#fff;border:1px solid #dbe8e2;
+  border-radius:16px;padding:26px 26px 22px;box-shadow:0 24px 60px #0f1f1a33;
+  animation:modal-in .18s ease-out;
+}
+@keyframes modal-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.modal-close{
+  position:absolute;right:12px;top:10px;width:28px;height:28px;border:0;background:transparent;
+  color:#9fb0aa;font-size:20px;line-height:1;cursor:pointer;border-radius:8px;font-family:inherit;
+}
+.modal-close:hover{background:#f2f8f5;color:#4d6b64}
+.modal-eyebrow{
+  font-size:10.5px;letter-spacing:2.6px;color:#b9754e;margin:0 0 8px;font-family:Georgia,serif;
+}
+.modal-card h2{
+  font-family:Georgia,"Songti SC",serif;font-size:19px;color:#1f3630;
+  margin:0 0 8px;letter-spacing:.5px;
+}
+.modal-lead{font-size:12.5px;line-height:1.7;color:#7d8e88;margin:0 0 14px}
+.modal-list{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:9px}
+.modal-list li{
+  display:flex;align-items:baseline;gap:8px;font-size:12px;line-height:1.6;color:#6d8079;
+  background:#f8fbf9;border:1px solid #eaf3ee;border-radius:9px;padding:8px 11px;
+}
+.modal-list b{
+  flex:0 0 auto;color:var(--teal);font-size:12px;letter-spacing:.3px;
+}
+.modal-list b::after{content:"·";margin-left:8px;color:#c3d4cd}
+.modal-note{font-size:11.5px;color:#93a49e;margin:0 0 16px;letter-spacing:.3px}
+.modal-actions{display:flex;gap:9px}
+.modal-actions .btn{font-size:12.5px;text-align:center;text-decoration:none;line-height:1.5}
+.modal-actions .btn.modal-link{display:block;flex:1;padding:10px}
+.modal-actions .btn.ghost{flex:0 0 34%}
+
+/* ---------- toast ---------- */
+.toast{
+  position:fixed;left:50%;bottom:36px;transform:translate(-50%,20px);
+  background:#20342e;color:#fff;font-size:13px;padding:12px 22px;border-radius:10px;
+  opacity:0;pointer-events:none;transition:all .22s;z-index:99;max-width:80vw;
+  box-shadow:0 14px 30px #10201b40;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- 窄屏 ---------- */
+@media (max-width:1080px){
+  .layout{grid-template-columns:1fr;padding:18px}
+  .panel{position:static}
+  .field textarea{height:200px}
+  .top{padding:0 16px}
+  .badge{display:none}
+}

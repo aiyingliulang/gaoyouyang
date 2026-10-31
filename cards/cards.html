@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>小红书图文卡片 · 稿有样 Draftory</title>
+
+<!--
+  ============================================================
+  稿有样 Draftory · 小红书图文卡片（cards/cards.html）
+  纯前端单页，双击本文件即可用（file:// 协议）。
+  ============================================================
+  【所用 CDN】
+  html2canvas 1.4.1
+    https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js
+    用途：把 1080×1440 的卡片 DOM 渲染成 PNG 并下载。
+          1x 用 scale=1（1080×1440），2x 用 scale=2（2160×2880）。
+    说明：离线或 CDN 被拦截时，分页与预览仍然可用，
+          点击导出会提示「渲染库未加载」。
+
+  【付费分级 v1】
+  Pro 状态与主程序共用 localStorage 键 gaoyouyang-pro-v1（值为 "1" 表示已激活），
+  两页同为 file:// 同源，localStorage 互通。
+  · 免费状态：渲染卡片时往卡片 DOM 里插入右下角水印「稿有样 Draftory」，
+             水印随卡片一起交给 html2canvas，真实落在 PNG 像素上。
+  · Pro 状态：不渲染水印；「2x 高清导出」（单张与全部）可用，导出 2160×2880。
+  · 免费状态点 2x：不导出，弹出页面内对话框说明 Pro 权益，并提供回主页面激活的链接。
+
+  【字体】
+  不使用任何 Web Font，只依赖系统字体：
+  标题 Songti SC / 思源宋体 / serif，正文 PingFang SC / 微软雅黑 / sans-serif。
+  这样 file:// 打开无需联网取字，导出结果稳定。
+
+  【无外部图片】
+  卡片装饰全部用 CSS 绘制，避免 canvas 跨域污染导致导出失败。
+  ============================================================
+-->
+
+<link rel="stylesheet" href="cards.css">
+<script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script defer src="cards.js"></script>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-left">
+    <a class="back" href="../index.html">← 稿有样 Draftory</a>
+    <span class="divider"></span>
+    <div class="brand"><span class="brand-icon">卡</span><strong>图文卡片</strong><small>3:4 · 1080×1440 / 2x 2160×2880</small></div>
+  </div>
+  <div class="top-right">
+    <span class="badge" title="导出功能依赖该 CDN，首次使用需联网">渲染库 html2canvas 1.4.1 · CDN</span>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- 左侧：输入与设置 -->
+  <aside class="panel">
+    <h1>长文 → 卡片</h1>
+    <p class="lead">粘贴长文，按 260–320 字自动分页，优先在段落与句号处断开，不会把一句话切成两半。正文第一行会作为封面标题，不再重复出现在内容卡里。</p>
+
+    <div class="field">
+      <label for="title">标题<em>留空则取正文第一行</em></label>
+      <input id="title" type="text" maxlength="40" placeholder="例如：为什么你的长文没人读完">
+    </div>
+
+    <div class="field">
+      <label for="subtitle">副标题<em>留空则自动生成</em></label>
+      <input id="subtitle" type="text" maxlength="60" placeholder="例如：一份可复用的排版方法">
+    </div>
+
+    <div class="field grow">
+      <label for="source">正文<em>支持直接粘贴纯文本或 Markdown</em></label>
+      <textarea id="source" spellcheck="false" placeholder="把你的长文粘贴到这里…&#10;（可点击下方「填入示例长文」先看看效果）"></textarea>
+    </div>
+
+    <div class="meter">
+      <span><b id="mChars">0</b> 字</span>
+      <span><b id="mCards">0</b> 张卡片</span>
+      <span><b id="mAvg">0</b> 字 / 页</span>
+    </div>
+
+    <div class="btn-row">
+      <button id="generate" class="btn primary" type="button">重新分页</button>
+      <button id="exportAll" class="btn ghost" type="button">全部导出 PNG</button>
+    </div>
+
+    <div class="btn-row">
+      <button id="exportAll2x" class="btn ghost wide" type="button">全部 2x 高清导出</button>
+    </div>
+
+    <div class="btn-row sub-row">
+      <button id="demo" class="btn link" type="button">填入示例长文</button>
+      <button id="clear" class="btn link" type="button">清空</button>
+    </div>
+
+    <p class="pro-state" id="proState">
+      <span class="pro-dot" aria-hidden="true"></span>
+      <span id="proStateText">免费版 · 导出带水印</span>
+      <a class="pro-state-link" id="proStateLink" href="../index.html">激活 Pro ↗</a>
+    </p>
+
+    <p class="status" id="status">等待输入…</p>
+  </aside>
+
+  <!-- 右侧：卡片预览 -->
+  <section class="stage">
+    <div class="stage-head">
+      <h2>卡片预览</h2>
+      <span class="stage-hint" id="stageHint">第 1 张为封面卡，其余为内容卡</span>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty">
+      <span class="empty-mark">✳</span>
+      <p>粘贴长文后，这里会出现封面卡与内容卡。<br>每张卡片都可以单独导出为 1080×1440 的 PNG。</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- 导出用的离屏舞台：把卡片克隆到这里，按 1:1 尺寸交给 html2canvas -->
+<div class="export-stage" id="exportStage" aria-hidden="true"></div>
+
+<!-- 免费状态下点击 2x 高清导出时的说明对话框（页面内实现，不依赖 alert） -->
+<div class="modal" id="proModal" hidden>
+  <div class="modal-mask" id="proModalMask"></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="proModalTitle">
+    <button class="modal-close" id="proModalClose" type="button" aria-label="关闭">×</button>
+    <p class="modal-eyebrow">稿有样 Pro 专属</p>
+    <h2 id="proModalTitle">2x 高清导出未解锁</h2>
+    <p class="modal-lead">当前是免费版，2x 高清导出需要激活 Pro。</p>
+    <ul class="modal-list">
+      <li><b>无水印</b><span>导出的卡片不再带「稿有样 Draftory」水印</span></li>
+      <li><b>2x 高清导出</b><span>单张与全部导出都是 2160×2880</span></li>
+      <li><b>主程序高级自查</b><span>扩展词库 + 自定义词库，命中标注来源</span></li>
+    </ul>
+    <p class="modal-note">激活请在主页面完成。</p>
+    <div class="modal-actions">
+      <a class="btn primary modal-link" id="proModalGo" href="../index.html">前往主页面激活</a>
+      <button class="btn ghost" id="proModalLater" type="button">稍后再说</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<noscript><p style="padding:24px;font-family:sans-serif">本页需要启用 JavaScript 才能分页与导出。</p></noscript>
+</body>
+</html>
