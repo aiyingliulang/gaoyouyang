@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    { "source": "/cards", "destination": "/cards/cards.html" }
+  ]
+}
+
+
+
+
+
